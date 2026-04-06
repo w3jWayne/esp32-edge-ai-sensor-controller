@@ -16,8 +16,9 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 #include "wifi_manager.h"
+#include "app_event.h"
 
-static const char *TAG = "wifi station";
+
 
 void app_main(void)
 {
@@ -35,6 +36,8 @@ void app_main(void)
         esp_log_level_set("wifi", CONFIG_LOG_MAXIMUM_LEVEL);
     }
 
-    ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+    app_event_init();
+    app_event_start();
+
     wifi_init_sta();
 }
