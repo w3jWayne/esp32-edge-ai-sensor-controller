@@ -54,19 +54,24 @@ static void app_pipeline_task(void *arg)
             continue;
         }
 
+        // Every sample goes through: Raw Sample → Calibration Applied → Calibrated Sample → Window Buffer
         if (!calibration_apply(&calibration, &raw_sample, &calibrated_sample)) {
             ESP_LOGE(TAG, "calibration_apply failed");
             vTaskDelay(pdMS_TO_TICKS(1000));
             continue;
         }
 
+        // A circular sliding buffer that collects calibrated sensor samples for feature extraction and ML inference.
+        // Every second: one new calibrated sample pushed
         if (!window_push(&window, &calibrated_sample)) {
             ESP_LOGE(TAG, "window_push failed");
             vTaskDelay(pdMS_TO_TICKS(1000));
             continue;
         }
 
+        // Check if the window buffer is full (contains enough samples for a complete feature extraction and inference cycle)
         if (app_window_is_full(&window)) {
+            // Trigger the feature extraction and inference pipeline every second once the window is full
             if (!feature_extract(&window, &feature_vector)) {
                 ESP_LOGE(TAG, "feature_extract failed");
             } else if (!inference_run(&inference_context, &feature_vector, &inference_result)) {

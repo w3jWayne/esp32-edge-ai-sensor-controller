@@ -8,10 +8,10 @@ void app_calibration_init(app_calibration_t *calibration)
         return;
     }
 
-    calibration->temperature_offset_c = -0.15f;
-    calibration->pressure_offset_kpa = 0.40f;
-    calibration->temperature_scale = 1.0f;
-    calibration->pressure_scale = 1.0f;
+    calibration->temperature_offset_c = -0.15f;     // subtract 0.15°C from raw reading
+    calibration->pressure_offset_kpa = 0.40f;       // add 0.40 kPa to raw reading
+    calibration->temperature_scale = 1.0f;          // no scaling (1:1)
+    calibration->pressure_scale = 1.0f;             // no scaling (1:1)
 }
 
 bool calibration_apply(const app_calibration_t *calibration,

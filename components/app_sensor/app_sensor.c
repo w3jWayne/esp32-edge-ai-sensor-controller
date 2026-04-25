@@ -33,9 +33,10 @@ bool sensor_read_sample(app_sensor_sample_t *sample)
 
     pattern_index = s_sample_index % APP_SENSOR_PATTERN_LENGTH;
     sample->sample_index = s_sample_index;
-    sample->temperature_c = 24.8f + s_temperature_pattern[pattern_index];
-    sample->pressure_kpa = 101.2f + s_pressure_pattern[pattern_index];
+    sample->temperature_c = 24.8f + s_temperature_pattern[pattern_index];   // Temperature varies: 24.65°C to 25.00°C (±0.2°C oscillation)
+    sample->pressure_kpa = 101.2f + s_pressure_pattern[pattern_index];      // Pressure varies: 100.95 to 101.45 kPa (±0.15 kPa oscillation)
 
+    // Every 48 samples, the last 6 samples (samples 42-47 of each cycle) contain anomalies
     anomaly_phase = s_sample_index % APP_SENSOR_ANOMALY_PERIOD;
     if (anomaly_phase >= (APP_SENSOR_ANOMALY_PERIOD - APP_SENSOR_ANOMALY_LENGTH)) {
         anomaly_offset = anomaly_phase - (APP_SENSOR_ANOMALY_PERIOD - APP_SENSOR_ANOMALY_LENGTH);
