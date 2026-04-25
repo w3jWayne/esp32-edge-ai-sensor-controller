@@ -9,6 +9,7 @@
 #include "app_features.h"
 #include "app_inference.h"
 #include "app_decision.h"
+#include "app_config.h"
 
 static const char *TAG = "app_pipeline";
 static StaticTask_t s_pipeline_task_buffer;
@@ -79,7 +80,7 @@ static void app_pipeline_task(void *arg)
             }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(APP_SENSOR_SAMPLE_PERIOD_MS));
     }
 }
 

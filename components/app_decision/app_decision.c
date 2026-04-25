@@ -1,4 +1,5 @@
 #include "app_decision.h"
+#include "app_config.h"
 
 void app_decision_init(app_decision_state_t *state)
 {
@@ -59,9 +60,9 @@ void decision_update(app_decision_state_t *state, const app_inference_result_t *
     // NORMAL:
     //  - Low score and no anomaly indication
     //
-    if (result->anomaly_score >= 0.80f || state->anomaly_streak >= 2U) {
+    if (result->anomaly_score >= APP_DECISION_ANOMALY_SCORE || state->anomaly_streak >= APP_DECISION_ANOMALY_STREAK) {
         state->label = APP_DECISION_STATE_ANOMALY;
-    } else if (result->anomaly_score >= 0.45f || result->is_anomaly) {
+    } else if (result->anomaly_score >= APP_DECISION_MONITOR_SCORE || result->is_anomaly) {
         state->label = APP_DECISION_STATE_MONITOR;
     } else {
         state->label = APP_DECISION_STATE_NORMAL;

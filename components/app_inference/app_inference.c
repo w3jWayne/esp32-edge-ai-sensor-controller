@@ -1,4 +1,5 @@
 #include "app_inference.h"
+#include "app_config.h"
 
 #include <math.h>
 
@@ -57,12 +58,6 @@ static const float s_feature_std[APP_FEATURE_COUNT] = {
     1.30f,   /* pressure range scale */
     0.35f    /* pressure mean delta scale */
 };
-
-/*
- * Classification threshold for anomaly probability.
- * This can also be tuned offline using validation data.
- */
-static const float s_anomaly_threshold = 0.50f;
 
 static float app_inference_sigmoid(float x)
 {
@@ -174,7 +169,7 @@ bool inference_run(const app_inference_context_t *context,
     result->anomaly_score = app_inference_sigmoid(z);
 
     /* Final classification threshold, usually tuned using validation data. */
-    result->is_anomaly = (result->anomaly_score >= s_anomaly_threshold);
+    result->is_anomaly = (result->anomaly_score >= APP_INFER_ANOMALY_THRESHOLD);
 
     result->backend_name = "logistic_regression";
 

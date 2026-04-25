@@ -4,8 +4,9 @@
 #include <stddef.h>
 
 #include "app_sensor.h"
+#include "app_config.h"
 
-#define APP_WINDOW_CAPACITY 16U
+
 
 typedef struct {
     app_sensor_sample_t samples[APP_WINDOW_CAPACITY];

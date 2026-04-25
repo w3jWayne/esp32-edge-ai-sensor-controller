@@ -1,6 +1,7 @@
 #include <stddef.h>
 
 #include "app_calibration.h"
+#include "app_config.h"
 
 void app_calibration_init(app_calibration_t *calibration)
 {
@@ -8,10 +9,10 @@ void app_calibration_init(app_calibration_t *calibration)
         return;
     }
 
-    calibration->temperature_offset_c = -0.15f;     // subtract 0.15°C from raw reading
-    calibration->pressure_offset_kpa = 0.40f;       // add 0.40 kPa to raw reading
-    calibration->temperature_scale = 1.0f;          // no scaling (1:1)
-    calibration->pressure_scale = 1.0f;             // no scaling (1:1)
+    calibration->temperature_offset_c = APP_CAL_TEMP_OFFSET;      // Add 0 offset to raw reading
+    calibration->pressure_offset_kpa = APP_CAL_PRESSURE_OFFSET;   // add 0 offset to raw reading
+    calibration->temperature_scale = APP_CAL_TEMP_SCALE;          // no scaling (1:1)
+    calibration->pressure_scale = APP_CAL_PRESSURE_SCALE;         // no scaling (1:1)
 }
 
 bool calibration_apply(const app_calibration_t *calibration,
