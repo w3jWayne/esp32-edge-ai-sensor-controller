@@ -17,6 +17,7 @@ static StackType_t s_pipeline_task_stack[4096];
 
 static void app_pipeline_task(void *arg)
 {
+    app_sensor_t sensor;
     app_calibration_t calibration;
     app_window_t window;
     app_decision_state_t decision_state;
@@ -27,15 +28,15 @@ static void app_pipeline_task(void *arg)
 
     (void)arg;
 
-    app_sensor_init();
+    app_sensor_init(&sensor);
     app_calibration_init(&calibration);
     app_window_init(&window);
     app_inference_init();
     app_decision_init(&decision_state);
 
     while (1) {
-        if (!sensor_read_sample(&raw_sample)) {
-            ESP_LOGE(TAG, "sensor_read_sample failed");
+        if (!app_sensor_read_sample(&sensor, &raw_sample)) {
+            ESP_LOGE(TAG, "app_sensor_read_sample failed");
             vTaskDelay(pdMS_TO_TICKS(1000));
             continue;
         }
