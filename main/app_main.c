@@ -17,6 +17,7 @@
 #include "lwip/sys.h"
 #include "wifi_manager.h"
 #include "app_event.h"
+#include "app_pipeline.h"
 
 
 
