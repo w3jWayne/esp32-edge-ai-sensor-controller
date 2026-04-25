@@ -59,6 +59,8 @@ static const float s_feature_std[APP_FEATURE_COUNT] = {
     0.35f    /* pressure mean delta scale */
 };
 
+static bool s_inference_initialized = false;
+
 static float app_inference_sigmoid(float x)
 {
     /*
@@ -84,19 +86,14 @@ static float app_inference_normalize_feature(float value, float mean, float std)
     return (value - mean) / std;
 }
 
-void app_inference_init(app_inference_context_t *context)
+void app_inference_init(void)
 {
-    if (context == NULL) {
-        return;
-    }
-
     /*
-     * Keep these fields for future backends such as TensorFlow Lite Micro.
-     * The current logistic regression backend uses static C arrays above.
+     * Current backend uses static model parameters, so there is no runtime
+     * allocation or model loading here. This function is kept as the stable
+     * initialization boundary for future backends such as TFLM.
      */
-    context->model_data = NULL;
-    context->tensor_arena = NULL;
-    context->tensor_arena_size = 0U;
+    s_inference_initialized = true;
 }
 
 /**
@@ -127,24 +124,17 @@ void app_inference_init(app_inference_context_t *context)
  *
  * @return true if inference succeeds, false otherwise
  */
-bool inference_run(const app_inference_context_t *context,
-                   const app_feature_vector_t *features,
+bool inference_run(const app_feature_vector_t *features,
                    app_inference_result_t *result)
 {
     float z;
     size_t i;
 
-    if (context == NULL || features == NULL || result == NULL ||
-        features->length != APP_FEATURE_COUNT) {
+    if (features == NULL || result == NULL ||
+        features->length != APP_FEATURE_COUNT ||
+        !s_inference_initialized) {
         return false;
     }
-
-    /*
-     * The current implementation uses compile-time model parameters.
-     * Keep context validation so the API remains compatible with future
-     * runtime-loaded model backends.
-     */
-    (void)context;
 
     z = s_model_bias;
 

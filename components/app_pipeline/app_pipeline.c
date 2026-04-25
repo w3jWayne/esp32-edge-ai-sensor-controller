@@ -19,7 +19,6 @@ static void app_pipeline_task(void *arg)
 {
     app_calibration_t calibration;
     app_window_t window;
-    app_inference_context_t inference_context;
     app_decision_state_t decision_state;
     app_sensor_sample_t raw_sample;
     app_sensor_sample_t calibrated_sample;
@@ -31,7 +30,7 @@ static void app_pipeline_task(void *arg)
     app_sensor_init();
     app_calibration_init(&calibration);
     app_window_init(&window);
-    app_inference_init(&inference_context);
+    app_inference_init();
     app_decision_init(&decision_state);
 
     while (1) {
@@ -61,7 +60,7 @@ static void app_pipeline_task(void *arg)
             // Trigger the feature extraction and inference pipeline every second once the window is full
             if (!feature_extract(&window, &feature_vector)) {
                 ESP_LOGE(TAG, "feature_extract failed");
-            } else if (!inference_run(&inference_context, &feature_vector, &inference_result)) {
+            } else if (!inference_run(&feature_vector, &inference_result)) {
                 ESP_LOGE(TAG, "inference_run failed");
             } else {
                 decision_update(&decision_state, &inference_result);
