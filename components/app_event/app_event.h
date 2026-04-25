@@ -2,6 +2,8 @@
 
 #include <stdbool.h>
 
+#include "freertos/FreeRTOS.h"
+
 typedef enum {
     APP_EVENT_WIFI_CONNECTED,
     APP_EVENT_WIFI_DISCONNECTED,
