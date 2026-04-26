@@ -4,6 +4,7 @@
 #include "esp_log.h"
 
 #include "app_sensor.h"
+#include "app_pipeline_queue.h"
 #include "app_calibration.h"
 #include "app_window.h"
 #include "app_features.h"
@@ -24,6 +25,25 @@ static app_sensor_mode_t app_pipeline_sensor_mode(void)
 #endif
 }
 
+static bool app_pipeline_read_http_sample(QueueHandle_t input_queue,
+                                          app_sensor_sample_t *sample,
+                                          uint32_t *sample_index)
+{
+    if (input_queue == NULL || sample == NULL || sample_index == NULL) {
+        return false;
+    }
+
+    if (xQueueReceive(input_queue,
+                      sample,
+                      pdMS_TO_TICKS(APP_SENSOR_SAMPLE_PERIOD_MS)) != pdPASS) {
+        return false;
+    }
+
+    sample->sample_index = *sample_index;
+    (*sample_index)++;
+    return true;
+}
+
 static void app_pipeline_task(void *arg)
 {
     app_sensor_t sensor;
@@ -34,20 +54,36 @@ static void app_pipeline_task(void *arg)
     app_sensor_sample_t calibrated_sample;
     app_feature_vector_t feature_vector;
     app_inference_result_t inference_result;
+    app_sensor_mode_t sensor_mode;
+    QueueHandle_t input_queue = NULL;
+    uint32_t http_sample_index = 0U;
 
     (void)arg;
 
-    app_sensor_init(&sensor, app_pipeline_sensor_mode());
+    sensor_mode = app_pipeline_sensor_mode();
+    if (sensor_mode == APP_SENSOR_MODE_SIMULATED) {
+        app_sensor_init(&sensor, sensor_mode);
+    } else {
+        input_queue = app_pipeline_queue_get();
+        if (input_queue == NULL) {
+            ESP_LOGE(TAG, "pipeline queue not initialized");
+            vTaskDelete(NULL);
+            return;
+        }
+    }
+
     app_calibration_init(&calibration);
     app_window_init(&window);
     app_inference_init();
     app_decision_init(&decision_state);
 
     while (1) {
-        if (!app_sensor_read_sample(&sensor, &raw_sample)) {
-            if (app_pipeline_sensor_mode() == APP_SENSOR_MODE_SIMULATED) {
-                ESP_LOGE(TAG, "app_sensor_read_sample failed");
+        if (sensor_mode == APP_SENSOR_MODE_HTTP_QUEUE) {
+            if (!app_pipeline_read_http_sample(input_queue, &raw_sample, &http_sample_index)) {
+                continue;
             }
+        } else if (!app_sensor_read_sample(&sensor, &raw_sample)) {
+            ESP_LOGE(TAG, "app_sensor_read_sample failed");
             vTaskDelay(pdMS_TO_TICKS(1000));
             continue;
         }
@@ -91,7 +127,9 @@ static void app_pipeline_task(void *arg)
             }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(APP_SENSOR_SAMPLE_PERIOD_MS));
+        if (sensor_mode == APP_SENSOR_MODE_SIMULATED) {
+            vTaskDelay(pdMS_TO_TICKS(APP_SENSOR_SAMPLE_PERIOD_MS));
+        }
     }
 }
 

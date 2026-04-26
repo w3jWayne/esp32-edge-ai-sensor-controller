@@ -19,6 +19,7 @@
 #include "app_event.h"
 #include "app_http.h"
 #include "app_pipeline.h"
+#include "app_pipeline_queue.h"
 
 void app_test_run_all(void);
 
@@ -48,6 +49,7 @@ void app_main(void)
 
     wifi_init_sta();
 #if CONFIG_APP_SENSOR_MODE_HTTP_QUEUE
+    app_pipeline_queue_init();
     ESP_ERROR_CHECK(app_http_start());
 #endif
     app_pipeline_start();

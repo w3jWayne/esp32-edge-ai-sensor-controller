@@ -79,6 +79,7 @@ Do not expose this device to untrusted networks or the public internet without t
 | **app_inference** | ML model inference execution | `app_inference_init()`, `inference_run()` |
 | **app_decision** | State machine for anomaly decisions | `decision_update()`, `app_decision_state_to_string()` |
 | **app_pipeline** | Orchestrates the complete processing pipeline | `app_pipeline_start()` |
+| **app_pipeline_queue** | FreeRTOS queue for sensor sample buffering | `app_pipeline_queue_init()`, `app_pipeline_queue_get()` |
 | **app_event** | FreeRTOS event queue system | `app_event_post()`, `app_event_get()` |
 | **app_wifi** | WiFi connectivity management | `wifi_init_sta()` |
 | **app_config** | Configuration constants and calibration | Tunable parameters |
@@ -156,6 +157,7 @@ esp32-iot-controller/
 │   ├── app_inference/       # ML model inference
 │   ├── app_decision/        # Anomaly decision logic
 │   ├── app_pipeline/        # Pipeline orchestration
+│   ├── app_pipeline_queue/  # Sensor sample queue buffering
 │   ├── app_event/           # Event system
 │   ├── app_wifi/            # WiFi management
 │   ├── app_config/          # Configuration definitions

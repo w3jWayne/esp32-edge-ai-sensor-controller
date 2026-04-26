@@ -6,7 +6,7 @@
 #include "esp_log.h"
 
 #include "app_http.h"
-#include "app_sensor.h"
+#include "app_pipeline_queue.h"
 
 #define APP_HTTP_SENSOR_MAX_BODY_LEN 96
 
@@ -91,6 +91,7 @@ static esp_err_t app_http_sensor_post_handler(httpd_req_t *req)
 {
     char body[APP_HTTP_SENSOR_MAX_BODY_LEN];
     app_sensor_sample_t sample;
+    QueueHandle_t queue;
 
     if (app_http_read_body(req, body, sizeof(body)) != ESP_OK) {
         return ESP_OK;
@@ -102,10 +103,20 @@ static esp_err_t app_http_sensor_post_handler(httpd_req_t *req)
         return ESP_OK;
     }
 
-    if (!app_sensor_submit_sample(&sample)) {
+    queue = app_pipeline_queue_get();
+    if (queue == NULL) {
+        ESP_LOGW(TAG, "pipeline queue unavailable");
         httpd_resp_set_status(req, "503 Service Unavailable");
         httpd_resp_set_type(req, "text/plain");
-        httpd_resp_sendstr(req, "sensor queue full\n");
+        httpd_resp_sendstr(req, "pipeline queue unavailable\n");
+        return ESP_OK;
+    }
+
+    if (xQueueSend(queue, &sample, 0) != pdPASS) {
+        ESP_LOGW(TAG, "pipeline queue full");
+        httpd_resp_set_status(req, "503 Service Unavailable");
+        httpd_resp_set_type(req, "text/plain");
+        httpd_resp_sendstr(req, "pipeline queue full\n");
         return ESP_OK;
     }
 
