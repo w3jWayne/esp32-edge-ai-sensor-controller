@@ -17,11 +17,19 @@
 #include "lwip/sys.h"
 #include "wifi_manager.h"
 #include "app_event.h"
+#include "app_http.h"
+#include "app_pipeline.h"
+#include "app_pipeline_queue.h"
 
-
+void app_test_run_all(void);
 
 void app_main(void)
 {
+#if CONFIG_APP_RUN_TESTS_ONLY
+    app_test_run_all();
+    return;
+#endif
+
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -40,4 +48,9 @@ void app_main(void)
     app_event_start();
 
     wifi_init_sta();
+#if CONFIG_APP_SENSOR_MODE_HTTP_QUEUE
+    app_pipeline_queue_init();
+    ESP_ERROR_CHECK(app_http_start());
+#endif
+    app_pipeline_start();
 }
