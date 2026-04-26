@@ -17,6 +17,7 @@
 #include "lwip/sys.h"
 #include "wifi_manager.h"
 #include "app_event.h"
+#include "app_http.h"
 #include "app_pipeline.h"
 
 void app_test_run_all(void);
@@ -46,5 +47,8 @@ void app_main(void)
     app_event_start();
 
     wifi_init_sta();
+#if CONFIG_APP_SENSOR_MODE_HTTP_QUEUE
+    ESP_ERROR_CHECK(app_http_start());
+#endif
     app_pipeline_start();
 }

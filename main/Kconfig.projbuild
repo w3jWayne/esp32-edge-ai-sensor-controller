@@ -1,4 +1,4 @@
-menu "Example Configuration"
+menu "Application Configuration"
 
     config APP_RUN_TESTS_ONLY
         bool "Run app_test suite at boot"
@@ -7,6 +7,19 @@ menu "Example Configuration"
             Run the lightweight app_test checks from app_main() and skip
             normal Wi-Fi and pipeline startup. This is intended for basic
             deterministic logic tests on host-like targets or ESP32.
+
+    choice APP_SENSOR_INPUT_MODE
+        prompt "Sensor input mode"
+        default APP_SENSOR_MODE_SIMULATED
+        help
+            Select the sensor source used by the pipeline.
+
+        config APP_SENSOR_MODE_SIMULATED
+            bool "Simulated sensor"
+
+        config APP_SENSOR_MODE_HTTP_QUEUE
+            bool "HTTP queue input"
+    endchoice
 
     config ESP_WIFI_SSID
         string "WiFi SSID"

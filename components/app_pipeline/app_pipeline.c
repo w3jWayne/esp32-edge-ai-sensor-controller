@@ -15,6 +15,15 @@ static const char *TAG = "app_pipeline";
 static StaticTask_t s_pipeline_task_buffer;
 static StackType_t s_pipeline_task_stack[4096];
 
+static app_sensor_mode_t app_pipeline_sensor_mode(void)
+{
+#if CONFIG_APP_SENSOR_MODE_HTTP_QUEUE
+    return APP_SENSOR_MODE_HTTP_QUEUE;
+#else
+    return APP_SENSOR_MODE_SIMULATED;
+#endif
+}
+
 static void app_pipeline_task(void *arg)
 {
     app_sensor_t sensor;
@@ -28,7 +37,7 @@ static void app_pipeline_task(void *arg)
 
     (void)arg;
 
-    app_sensor_init(&sensor);
+    app_sensor_init(&sensor, app_pipeline_sensor_mode());
     app_calibration_init(&calibration);
     app_window_init(&window);
     app_inference_init();
@@ -36,7 +45,9 @@ static void app_pipeline_task(void *arg)
 
     while (1) {
         if (!app_sensor_read_sample(&sensor, &raw_sample)) {
-            ESP_LOGE(TAG, "app_sensor_read_sample failed");
+            if (app_pipeline_sensor_mode() == APP_SENSOR_MODE_SIMULATED) {
+                ESP_LOGE(TAG, "app_sensor_read_sample failed");
+            }
             vTaskDelay(pdMS_TO_TICKS(1000));
             continue;
         }

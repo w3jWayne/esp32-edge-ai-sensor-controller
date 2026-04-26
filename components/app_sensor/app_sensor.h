@@ -3,11 +3,19 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+
 typedef struct {
     uint32_t sample_index;
     float temperature_c;
     float pressure_kpa;
 } app_sensor_sample_t;
+
+typedef enum {
+    APP_SENSOR_MODE_SIMULATED = 0,
+    APP_SENSOR_MODE_HTTP_QUEUE,
+} app_sensor_mode_t;
 
 /**
  * @brief Sensor instance state.
@@ -18,7 +26,10 @@ typedef struct {
  */
 typedef struct {
     uint32_t sample_index;
+    app_sensor_mode_t mode;
+    QueueHandle_t queue;
 } app_sensor_t;
 
-void app_sensor_init(app_sensor_t *sensor);
+void app_sensor_init(app_sensor_t *sensor, app_sensor_mode_t mode);
 bool app_sensor_read_sample(app_sensor_t *sensor, app_sensor_sample_t *sample);
+bool app_sensor_submit_sample(const app_sensor_sample_t *sample);
