@@ -18,6 +18,22 @@ This project demonstrates a production-grade embedded ML application on ESP32, f
 - **Modular Design**: Well-isolated components for testability and reusability
 - **Comprehensive Testing**: Integrated test framework for unit and integration testing
 
+## ⚠️ Security Notice
+
+This is an **MVP/proof-of-concept implementation** designed for local testing and development. The following limitations should be understood:
+
+- **HTTP endpoint is unauthenticated**: The `/sensor` endpoint accepts requests from any device on the local network without authentication. This is suitable for testing but not for production deployment.
+- **No HTTPS/TLS support**: Communication is unencrypted plaintext.
+- **Local network only**: Intended for use on trusted local networks during development.
+
+**For production deployment**, implement:
+- ✅ API authentication (API key, JWT, or mutual TLS)
+- ✅ HTTPS/TLS encryption
+- ✅ Input validation and rate limiting
+- ✅ Security audit and hardening
+
+Do not expose this device to untrusted networks or the public internet without these security measures.
+
 ## Supported Targets
 
 - ESP32
