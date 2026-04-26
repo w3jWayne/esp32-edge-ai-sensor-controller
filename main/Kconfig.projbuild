@@ -1,5 +1,13 @@
 menu "Example Configuration"
 
+    config APP_RUN_TESTS_ONLY
+        bool "Run app_test suite at boot"
+        default n
+        help
+            Run the lightweight app_test checks from app_main() and skip
+            normal Wi-Fi and pipeline startup. This is intended for basic
+            deterministic logic tests on host-like targets or ESP32.
+
     config ESP_WIFI_SSID
         string "WiFi SSID"
         default "myssid"

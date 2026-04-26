@@ -19,11 +19,15 @@
 #include "app_event.h"
 #include "app_pipeline.h"
 
-
-
+void app_test_run_all(void);
 
 void app_main(void)
 {
+#if CONFIG_APP_RUN_TESTS_ONLY
+    app_test_run_all();
+    return;
+#endif
+
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
