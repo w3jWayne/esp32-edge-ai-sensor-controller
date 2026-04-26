@@ -479,6 +479,196 @@ I (10299) wifi station: connect to the AP fail
 I (10299) wifi station: Failed to connect to SSID:myssid, password:mypassword
 ```
 
+```
+## Python Integration Test (HTTP Sensor Input)
+
+This project includes a Python-based integration test to validate the HTTP sensor input pipeline end-to-end.
+
+The test simulates sensor data from a host machine and sends it to the ESP32 over HTTP:
+
+```
+
+Python → HTTP POST /sensor → ESP32 → Queue → Pipeline → Inference → Decision
+
+```
+
+### Location
+
+```
+
+tests/integration/http_sensor_test.py
+
+````
+
+---
+
+### Prerequisites
+
+Install Python dependency:
+
+```bash
+pip install requests
+````
+
+---
+
+### Usage
+
+```bash
+python tests/integration/http_sensor_test.py <ESP32_IP> --mode <mode>
+```
+
+Example:
+
+```bash
+python tests/integration/http_sensor_test.py 192.168.8.88 --mode mixed
+```
+
+---
+
+### Test Modes
+
+#### 1. Normal Mode
+
+```bash
+--mode normal
+```
+
+* Sends stable sensor values with small noise
+* Expected result: `decision=normal`
+* Validates baseline behavior
+
+---
+
+#### 2. Anomaly Mode
+
+```bash
+--mode anomaly
+```
+
+* Sends extreme sensor values
+* Expected result: `decision=anomaly`
+* Validates anomaly detection sensitivity
+
+---
+
+#### 3. Mixed Mode (Recommended)
+
+```bash
+--mode mixed
+```
+
+* Pattern:
+
+  ```
+  20 normal → 20 anomaly → 25 normal
+  ```
+* Designed for a 16-sample window
+* Validates:
+
+  * Detection transition (normal → anomaly)
+  * Recovery behavior (anomaly → normal)
+
+---
+
+#### 4. Stress Mode
+
+```bash
+--mode stress
+```
+
+* Sends data at high frequency
+* Validates:
+
+  * Queue behavior
+  * Backpressure handling
+  * System stability under load
+
+---
+
+### Expected Output (ESP32 Logs)
+
+Normal operation:
+
+```
+decision=normal score≈0.05
+temp_range≈0.3 pressure_range≈0.5
+```
+
+Anomaly detected:
+
+```
+decision=anomaly score≈1.00
+temp_range≫10 pressure_range≫10
+```
+
+Recovery:
+
+```
+decision=normal (after enough normal samples)
+```
+
+---
+
+### Important Notes
+
+* The system uses a **16-sample sliding window**
+* A single anomaly sample can significantly affect:
+
+  ```
+  temp_range / pressure_range
+  ```
+* Therefore:
+
+  * Model decision reacts immediately
+  * System stability should be handled via **streak / alarm logic**
+
+---
+
+### Testing Strategy
+
+To fully validate the system:
+
+1. Run `normal` → verify no false positives
+2. Run `anomaly` → verify detection triggers
+3. Run `mixed` → verify transition and recovery
+4. Run `stress` → verify system robustness
+
+---
+
+### Troubleshooting
+
+If requests fail:
+
+* Verify ESP32 IP address from serial monitor
+* Ensure WiFi connection is established
+* Check HTTP server is started:
+
+  ```
+  app_http: HTTP server started, POST /sensor
+  ```
+
+---
+
+### Notes for Development
+
+This Python test acts as an **integration test tool**, not a unit test.
+
+It validates:
+
+* Network stack (WiFi + HTTP)
+* Data ingestion
+* Pipeline processing
+* ML inference behavior
+
+This makes it useful for:
+
+* Debugging pipeline issues
+* Validating model behavior
+* Demonstrating system-level design in interviews
+
+```
+
 ## Troubleshooting
 
 For any technical queries, please open an [issue](https://github.com/espressif/esp-idf/issues) on GitHub. We will get back to you soon.
