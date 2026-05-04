@@ -3,6 +3,7 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "app_event.h"
+#include "app_mqtt.h"
 
 static QueueHandle_t s_app_event_queue = NULL;
 static const char *TAG = "app_event_task";
@@ -48,8 +49,9 @@ static void app_event_task(void *arg)
     while (1) {
         if (app_event_get(&event, portMAX_DELAY)) {
             switch (event) {
-            case APP_EVENT_WIFI_CONNECTED:
-                ESP_LOGI(TAG, "APP_EVENT_WIFI_CONNECTED");
+            case APP_EVENT_WIFI_GOT_IP:
+                ESP_LOGI(TAG, "APP_EVENT_WIFI_GOT_IP");
+                app_mqtt_start();
                 break;
 
             case APP_EVENT_WIFI_DISCONNECTED:

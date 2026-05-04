@@ -5,7 +5,7 @@
 #include "freertos/FreeRTOS.h"
 
 typedef enum {
-    APP_EVENT_WIFI_CONNECTED,
+    APP_EVENT_WIFI_GOT_IP,
     APP_EVENT_WIFI_DISCONNECTED,
     APP_EVENT_WIFI_CONNECT_FAILED,
 } app_event_t;

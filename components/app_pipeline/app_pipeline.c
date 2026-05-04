@@ -11,6 +11,7 @@
 #include "app_inference.h"
 #include "app_decision.h"
 #include "app_config.h"
+#include "app_mqtt.h"
 
 static const char *TAG = "app_pipeline";
 static StaticTask_t s_pipeline_task_buffer;
@@ -112,6 +113,12 @@ static void app_pipeline_task(void *arg)
                 ESP_LOGE(TAG, "inference_run failed");
             } else {
                 decision_update(&decision_state, &inference_result);
+                if (app_mqtt_is_connected()) {
+                    app_mqtt_publish_decision(
+                        calibrated_sample.sample_index,
+                        &decision_state,
+                        &inference_result);
+                }
                 ESP_LOGI(
                     TAG,
                     "sample=%lu score=%.2f decision=%s streak=%lu temp_mean=%.2f temp_range=%.2f pressure_mean=%.2f pressure_range=%.2f backend=%s",

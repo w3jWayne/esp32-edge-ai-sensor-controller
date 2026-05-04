@@ -1,5 +1,5 @@
 idf_component_register(
     SRCS "app_event.c"
     INCLUDE_DIRS "."
-    REQUIRES esp_event esp_netif nvs_flash
+    REQUIRES esp_event esp_netif nvs_flash app_mqtt
 )

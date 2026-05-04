@@ -80,8 +80,8 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
 
-        /* Notify app layer that network is ready */
-        app_event_post(APP_EVENT_WIFI_CONNECTED);
+        /* Notify app layer that the station has a usable IP address */
+        app_event_post(APP_EVENT_WIFI_GOT_IP);
 
         ESP_LOGI(TAG, "Wi-Fi connected");
     }

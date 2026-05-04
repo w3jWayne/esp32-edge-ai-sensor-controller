@@ -21,6 +21,25 @@ menu "Application Configuration"
             bool "HTTP queue input"
     endchoice
 
+    config APP_MQTT_BROKER_URI
+        string "MQTT broker URI"
+        default ""
+        help
+            MQTT broker URI used by the MQTT publisher component, for example
+            mqtt://192.168.1.10:1883.
+
+    config APP_MQTT_CLIENT_ID
+        string "MQTT client ID"
+        default "esp32-iot-controller"
+        help
+            MQTT client identifier sent to the broker.
+
+    config APP_MQTT_DECISION_TOPIC
+        string "MQTT decision topic"
+        default "esp32/iot-controller/decision"
+        help
+            MQTT topic used for decision publishing.
+
     config ESP_WIFI_SSID
         string "WiFi SSID"
         default "myssid"
