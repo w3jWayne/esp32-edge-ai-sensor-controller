@@ -18,24 +18,38 @@ This project demonstrates a **modular edge AI pipeline** combined with an **even
 
 ## 🏗️ Architecture
 
-```mermaid
-flowchart LR
-    A[Sensor Input (Simulated / HTTP)]
-    B[app_sensor]
-    C[app_window]
-    D[app_features]
-    E[app_inference]
-    F[app_decision]
-    G[app_pipeline]
-    H[app_mqtt]
-    I[MQTT Broker (Mosquitto)]
-    J[Python Subscriber]
-
-    A --> B --> C --> D --> E --> F
-    F --> G
-    G --> H
-    H --> I
-    I --> J
+```text
++-------------------------------+
+| ESP32 Edge Node               |
+|                               |
+| Sensor Input                  |
+|   - Simulated                 |
+|   - HTTP                      |
+|                               |
+| app_sensor                    |
+|      ↓                        |
+| app_window                    |
+|      ↓                        |
+| app_features                  |
+|      ↓                        |
+| app_inference                 |
+|      ↓                        |
+| app_decision                  |
+|      ↓                        |
+| app_pipeline                  |
+|      ↓                        |
+| app_mqtt                      |
++-------------------------------+
+              ↓
++-------------------------------+
+| MQTT Broker                   |
+| Mosquitto                     |
++-------------------------------+
+              ↓
++-------------------------------+
+| Python Subscriber             |
+| tools/mqtt_subscriber.py      |
++-------------------------------+
 ````
 
 * ESP32 acts as a **producer (edge inference node)**
