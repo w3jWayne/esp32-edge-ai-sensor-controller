@@ -20,7 +20,7 @@ This project demonstrates a **modular edge AI pipeline** combined with an **even
 
 ```mermaid
 flowchart LR
-    A[Sensor Input\n(Simulated / HTTP)]
+    A[Sensor Input (Simulated / HTTP)]
     B[app_sensor]
     C[app_window]
     D[app_features]
@@ -28,7 +28,7 @@ flowchart LR
     F[app_decision]
     G[app_pipeline]
     H[app_mqtt]
-    I[MQTT Broker\n(Mosquitto)]
+    I[MQTT Broker (Mosquitto)]
     J[Python Subscriber]
 
     A --> B --> C --> D --> E --> F
