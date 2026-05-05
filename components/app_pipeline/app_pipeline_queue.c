@@ -35,3 +35,21 @@ QueueHandle_t app_pipeline_queue_get(void)
 {
     return s_pipeline_queue;
 }
+
+bool app_pipeline_queue_post(const app_sensor_sample_t *sample, TickType_t ticks_to_wait)
+{
+    if (s_pipeline_queue == NULL || sample == NULL) {
+        return false;
+    }
+
+    return (xQueueSend(s_pipeline_queue, sample, ticks_to_wait) == pdPASS);
+}
+
+bool app_pipeline_queue_receive(app_sensor_sample_t *sample, TickType_t ticks_to_wait)
+{
+    if (s_pipeline_queue == NULL || sample == NULL) {
+        return false;
+    }
+
+    return (xQueueReceive(s_pipeline_queue, sample, ticks_to_wait) == pdPASS);
+}

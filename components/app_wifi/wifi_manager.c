@@ -54,6 +54,16 @@ static const char *TAG = "wifi station";
 
 static int s_retry_num = 0;
 
+static void app_wifi_post_event(app_event_type_t type)
+{
+    const app_event_t event = {
+        .type = type,
+    };
+
+    if (!app_event_post(&event)) {
+        ESP_LOGW(TAG, "failed to post app event type=%d", (int)type);
+    }
+}
 
 static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
@@ -61,7 +71,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        app_event_post(APP_EVENT_WIFI_DISCONNECTED);
+        app_wifi_post_event(APP_EVENT_WIFI_DISCONNECTED);
 
         if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
             esp_wifi_connect();
@@ -69,7 +79,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             ESP_LOGI(TAG, "retry to connect to the AP");
         } else {
             /* Notify app layer that connection attempts have failed */
-            app_event_post(APP_EVENT_WIFI_CONNECT_FAILED);
+            app_wifi_post_event(APP_EVENT_WIFI_CONNECT_FAILED);
 
             ESP_LOGI(TAG, "Wi-Fi connect failed after max retries");
         }
@@ -81,7 +91,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         s_retry_num = 0;
 
         /* Notify app layer that the station has a usable IP address */
-        app_event_post(APP_EVENT_WIFI_GOT_IP);
+        app_wifi_post_event(APP_EVENT_WIFI_GOT_IP);
 
         ESP_LOGI(TAG, "Wi-Fi connected");
     }

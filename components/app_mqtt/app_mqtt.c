@@ -14,34 +14,150 @@ static const char *TAG = "app_mqtt";
 static esp_mqtt_client_handle_t s_mqtt_client = NULL;
 static bool s_mqtt_started = false;
 static bool s_mqtt_connected = false;
+static bool s_mqtt_disabled = false;
+
+static size_t app_mqtt_copy_bytes(char *dest,
+                                  size_t dest_size,
+                                  const char *src,
+                                  size_t src_len,
+                                  bool *truncated)
+{
+    size_t copy_len = 0U;
+
+    if (dest == NULL || dest_size == 0U) {
+        return 0U;
+    }
+
+    if (truncated != NULL) {
+        *truncated = false;
+    }
+
+    if (src != NULL && src_len > 0U) {
+        copy_len = src_len;
+        if (copy_len >= dest_size) {
+            copy_len = dest_size - 1U;
+            if (truncated != NULL) {
+                *truncated = true;
+            }
+        }
+
+        memcpy(dest, src, copy_len);
+    }
+
+    dest[copy_len] = '\0';
+    return copy_len;
+}
+
+static bool app_mqtt_post_translated_event(const app_event_t *event)
+{
+    if (app_event_post(event)) {
+        return true;
+    }
+
+    ESP_LOGW(TAG, "failed to enqueue app event type=%d", (int)event->type);
+    return false;
+}
+
+static void app_mqtt_build_message_event(esp_mqtt_event_handle_t mqtt_event,
+                                         app_event_t *event)
+{
+    app_event_mqtt_message_t *message = &event->data.mqtt_message;
+    size_t topic_len = 0U;
+    size_t data_len = 0U;
+
+    memset(message, 0, sizeof(*message));
+
+    if (mqtt_event == NULL) {
+        return;
+    }
+
+    if (mqtt_event->topic_len > 0) {
+        topic_len = (size_t)mqtt_event->topic_len;
+    }
+
+    if (mqtt_event->data_len > 0) {
+        data_len = (size_t)mqtt_event->data_len;
+    }
+
+    message->topic_len = app_mqtt_copy_bytes(
+        message->topic,
+        sizeof(message->topic),
+        mqtt_event->topic,
+        topic_len,
+        &message->topic_truncated);
+    message->data_len = app_mqtt_copy_bytes(
+        message->data,
+        sizeof(message->data),
+        mqtt_event->data,
+        data_len,
+        &message->data_truncated);
+}
+
+static void app_mqtt_build_error_event(esp_mqtt_event_handle_t mqtt_event,
+                                       app_event_t *event)
+{
+    app_event_mqtt_error_t *error = &event->data.mqtt_error;
+
+    memset(error, 0, sizeof(*error));
+    error->connect_return_code = -1;
+
+    if (mqtt_event == NULL || mqtt_event->error_handle == NULL) {
+        return;
+    }
+
+    error->error_type = mqtt_event->error_handle->error_type;
+    error->esp_tls_last_esp_err = mqtt_event->error_handle->esp_tls_last_esp_err;
+    error->esp_tls_stack_err = mqtt_event->error_handle->esp_tls_stack_err;
+    error->esp_transport_sock_errno = mqtt_event->error_handle->esp_transport_sock_errno;
+    error->connect_return_code = mqtt_event->error_handle->connect_return_code;
+}
 
 static void app_mqtt_event_handler(void *handler_args,
                                    esp_event_base_t base,
                                    int32_t event_id,
                                    void *event_data)
 {
+    app_event_t event = { 0 };
+
     (void)handler_args;
     (void)base;
-    (void)event_data;
 
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
-        s_mqtt_connected = true;
-        ESP_LOGI(TAG, "connected to broker");
+        event.type = APP_EVENT_MQTT_CONNECTED;
+        app_mqtt_post_translated_event(&event);
         break;
 
     case MQTT_EVENT_DISCONNECTED:
-        s_mqtt_connected = false;
-        ESP_LOGW(TAG, "disconnected from broker");
+        event.type = APP_EVENT_MQTT_DISCONNECTED;
+        app_mqtt_post_translated_event(&event);
+        break;
+
+    case MQTT_EVENT_DATA:
+        event.type = APP_EVENT_MQTT_MESSAGE;
+        app_mqtt_build_message_event((esp_mqtt_event_handle_t)event_data, &event);
+        app_mqtt_post_translated_event(&event);
         break;
 
     case MQTT_EVENT_ERROR:
-        ESP_LOGW(TAG, "MQTT client error");
+        event.type = APP_EVENT_MQTT_ERROR;
+        app_mqtt_build_error_event((esp_mqtt_event_handle_t)event_data, &event);
+        app_mqtt_post_translated_event(&event);
         break;
 
     default:
         break;
     }
+}
+
+static void app_mqtt_handle_control_message(const app_event_mqtt_message_t *message)
+{
+    ESP_LOGI(TAG,
+             "received MQTT message topic=%s payload=%s topic_truncated=%s data_truncated=%s",
+             message->topic,
+             message->data,
+             message->topic_truncated ? "true" : "false",
+             message->data_truncated ? "true" : "false");
 }
 
 void app_mqtt_init(void)
@@ -52,11 +168,12 @@ void app_mqtt_init(void)
         .credentials.client_id = CONFIG_APP_MQTT_CLIENT_ID,
     };
 
-    if (s_mqtt_client != NULL) {
+    if (s_mqtt_client != NULL || s_mqtt_disabled) {
         return;
     }
 
     if (strlen(CONFIG_APP_MQTT_BROKER_URI) == 0U) {
+        s_mqtt_disabled = true;
         ESP_LOGW(TAG, "MQTT broker URI is empty; MQTT publishing disabled");
         return;
     }
@@ -100,6 +217,46 @@ void app_mqtt_start(void)
 
     s_mqtt_started = true;
     ESP_LOGI(TAG, "MQTT client started");
+}
+
+void app_mqtt_handle_connected(void)
+{
+    s_mqtt_connected = true;
+    ESP_LOGI(TAG, "connected to broker");
+}
+
+void app_mqtt_handle_disconnected(void)
+{
+    s_mqtt_connected = false;
+    ESP_LOGW(TAG, "disconnected from broker");
+}
+
+void app_mqtt_handle_message(const app_event_mqtt_message_t *message)
+{
+    if (message == NULL) {
+        return;
+    }
+
+    /*
+     * Keep command/message handling lightweight here. If MQTT commands grow
+     * beyond simple routing or logging, hand them off to a dedicated worker.
+     */
+    app_mqtt_handle_control_message(message);
+}
+
+void app_mqtt_handle_error(const app_event_mqtt_error_t *error)
+{
+    if (error == NULL) {
+        return;
+    }
+
+    ESP_LOGW(TAG,
+             "MQTT client error type=%ld tls_last=%d tls_stack=%d sock_errno=%d connect_rc=%d",
+             (long)error->error_type,
+             error->esp_tls_last_esp_err,
+             error->esp_tls_stack_err,
+             error->esp_transport_sock_errno,
+             error->connect_return_code);
 }
 
 bool app_mqtt_is_connected(void)

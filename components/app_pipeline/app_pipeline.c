@@ -26,17 +26,14 @@ static app_sensor_mode_t app_pipeline_sensor_mode(void)
 #endif
 }
 
-static bool app_pipeline_read_http_sample(QueueHandle_t input_queue,
-                                          app_sensor_sample_t *sample,
+static bool app_pipeline_read_http_sample(app_sensor_sample_t *sample,
                                           uint32_t *sample_index)
 {
-    if (input_queue == NULL || sample == NULL || sample_index == NULL) {
+    if (sample == NULL || sample_index == NULL) {
         return false;
     }
 
-    if (xQueueReceive(input_queue,
-                      sample,
-                      pdMS_TO_TICKS(APP_SENSOR_SAMPLE_PERIOD_MS)) != pdPASS) {
+    if (!app_pipeline_queue_receive(sample, pdMS_TO_TICKS(APP_SENSOR_SAMPLE_PERIOD_MS))) {
         return false;
     }
 
@@ -80,7 +77,7 @@ static void app_pipeline_task(void *arg)
 
     while (1) {
         if (sensor_mode == APP_SENSOR_MODE_HTTP_QUEUE) {
-            if (!app_pipeline_read_http_sample(input_queue, &raw_sample, &http_sample_index)) {
+            if (!app_pipeline_read_http_sample(&raw_sample, &http_sample_index)) {
                 continue;
             }
         } else if (!app_sensor_read_sample(&sensor, &raw_sample)) {

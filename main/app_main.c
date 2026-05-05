@@ -18,6 +18,7 @@
 #include "wifi_manager.h"
 #include "app_event.h"
 #include "app_http.h"
+#include "app_mqtt.h"
 #include "app_pipeline.h"
 #include "app_pipeline_queue.h"
 
@@ -25,6 +26,15 @@ void app_test_run_all(void);
 
 void app_main(void)
 {
+    const app_event_dispatch_handlers_t dispatch_handlers = {
+        .start_mqtt = app_mqtt_start,
+        .post_sensor_sample = app_pipeline_queue_post,
+        .handle_mqtt_connected = app_mqtt_handle_connected,
+        .handle_mqtt_disconnected = app_mqtt_handle_disconnected,
+        .handle_mqtt_message = app_mqtt_handle_message,
+        .handle_mqtt_error = app_mqtt_handle_error,
+    };
+
 #if CONFIG_APP_RUN_TESTS_ONLY
     app_test_run_all();
     return;
@@ -45,11 +55,15 @@ void app_main(void)
     }
 
     app_event_init();
+    app_event_register_dispatch_handlers(&dispatch_handlers);
+#if CONFIG_APP_SENSOR_MODE_HTTP_QUEUE
+    app_pipeline_queue_init();
+#endif
     app_event_start();
+    app_mqtt_init();
 
     wifi_init_sta();
 #if CONFIG_APP_SENSOR_MODE_HTTP_QUEUE
-    app_pipeline_queue_init();
     ESP_ERROR_CHECK(app_http_start());
 #endif
     app_pipeline_start();
