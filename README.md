@@ -1,80 +1,80 @@
-# ESP32 Edge AI IoT Controller
+# ESP32 Event-Driven IoT Controller
 
-An ESP32 (ESP-IDF) project that performs **real-time anomaly detection on-device** and publishes results over **MQTT**.
+An ESP32 (**ESP-IDF**) firmware project demonstrating a modular, event-driven IoT architecture with Wi-Fi networking, HTTP interfaces, MQTT communication, and embedded sensor data processing.
 
-This project demonstrates a **modular edge AI pipeline** combined with an **event-driven IoT architecture**, designed for scalability and clean separation of concerns.
-
----
-
-## ✨ Highlights
-
-- 🧠 Edge AI inference on ESP32 (logistic regression / lightweight ML)
-- 📡 MQTT-based telemetry (ESP32 → Broker → Python subscriber)
-- 🧩 Modular pipeline (sensor → features → inference → decision)
-- ⚡ Event-driven design with proper Wi-Fi → MQTT lifecycle
-- ⚙️ Configurable via ESP-IDF `menuconfig`
+The project is designed to explore production-style embedded firmware structure using reusable modules, centralized event handling, and scalable communication flows.
 
 ---
 
-## 🏗️ Architecture
+# ✨ Highlights
+
+* ⚡ Event-driven firmware architecture using FreeRTOS queues
+* 📡 MQTT-based telemetry communication
+* 🌐 Wi-Fi + HTTP server integration
+* 🧩 Modular processing pipeline design
+* 🔄 Centralized event dispatch system
+* ⚙️ Configurable using ESP-IDF `menuconfig`
+* 🧪 Python-based integration testing tools
+
+---
+
+# 🏗️ Architecture
 
 ```text
-+-------------------------------+
-| ESP32 Edge Node               |
-|                               |
-| Sensor Input                  |
-|   - Simulated                 |
-|   - HTTP                      |
-|                               |
-| app_sensor                    |
-|      ↓                        |
-| app_window                    |
-|      ↓                        |
-| app_features                  |
-|      ↓                        |
-| app_inference                 |
-|      ↓                        |
-| app_decision                  |
-|      ↓                        |
-| app_pipeline                  |
-|      ↓                        |
-| app_mqtt                      |
-+-------------------------------+
-              ↓
-+-------------------------------+
-| MQTT Broker                   |
-| Mosquitto                     |
-+-------------------------------+
-              ↓
-+-------------------------------+
-| Python Subscriber             |
-| tools/mqtt_subscriber.py      |
-+-------------------------------+
-````
++-----------------------------------+
+| ESP32 IoT Controller              |
+|                                   |
+| Sensor Input                      |
+|   - Simulated                     |
+|   - HTTP                          |
+|                                   |
+| app_sensor                        |
+|      ↓                            |
+| app_event                         |
+|      ↓                            |
+| app_pipeline                      |
+|      ↓                            |
+| app_decision                      |
+|      ↓                            |
+| app_mqtt                          |
+|                                   |
+| FreeRTOS Event / Queue Flow       |
++-----------------------------------+
+                ↓
++-----------------------------------+
+| MQTT Broker                       |
+| Mosquitto                         |
++-----------------------------------+
+                ↓
++-----------------------------------+
+| Python Subscriber / Test Client   |
+| tools/mqtt_subscriber.py          |
++-----------------------------------+
+```
 
-* ESP32 acts as a **producer (edge inference node)**
-* Python acts as a **consumer (monitoring client)**
-* MQTT broker routes messages between them
+### Architecture Notes
+
+* `app_event` centralizes asynchronous event handling
+* `app_pipeline` manages sensor processing flow
+* `app_mqtt` handles communication transport
+* modules are designed to remain loosely coupled
 
 ---
 
-## 📡 MQTT Example
+# 📡 MQTT Example
 
-**Topic**
+## Topic
 
-```
+```text
 esp32/iot-controller/decision
 ```
 
-**Payload**
+## Example Payload
 
 ```json
 {
-  "decision": "anomaly",
-  "anomaly_score": 0.993,
-  "anomaly_streak": 2,
-  "backend": "logistic_regression",
-  "is_anomaly": true,
+  "decision": "normal",
+  "sensor_state": "stable",
   "sample_index": 42,
   "total_windows": 27
 }
@@ -82,9 +82,9 @@ esp32/iot-controller/decision
 
 ---
 
-## ⚙️ Quick Start
+# ⚙️ Quick Start
 
-### 1. Start MQTT Broker
+## 1. Start MQTT Broker
 
 ```bash
 mosquitto -c C:\mosquitto.conf -v
@@ -92,7 +92,7 @@ mosquitto -c C:\mosquitto.conf -v
 
 ---
 
-### 2. Run Python Subscriber
+## 2. Run Python Subscriber
 
 ```bash
 pip install paho-mqtt
@@ -101,98 +101,102 @@ python tools/mqtt_subscriber.py --broker <your-ip>
 
 ---
 
-### 3. Configure & Flash ESP32
+## 3. Configure & Flash ESP32
 
 ```bash
 idf.py menuconfig
 idf.py build flash monitor
 ```
 
-Set:
+Configure:
 
-```
+```text
 MQTT Broker URI → mqtt://<your-ip>:1883
 ```
 
 ---
 
-## 📊 Example Output
+# 📊 Example Output
 
-```
+```text
 [esp32/iot-controller/decision]
 {
-  "decision": "normal",
-  "anomaly_score": 0.03
+  "decision": "normal"
 }
 
 [esp32/iot-controller/decision]
 {
-  "decision": "anomaly",
-  "anomaly_score": 0.99
+  "decision": "monitor"
 }
 ```
 
 ---
 
-## 🧠 Design Highlights
+# 🧠 Design Highlights
 
-### Decoupled Architecture
+## Event-Driven Architecture
 
-* `app_decision` is independent of MQTT
-* `app_mqtt` handles transport only
-* `app_pipeline` integrates the full processing flow
+* centralized event queue and dispatcher
+* asynchronous module communication
+* FreeRTOS queue-based task coordination
+* separation between communication, processing, and control layers
 
-### Correct Network Lifecycle
+---
+
+## Modular Firmware Design
+
+* `app_sensor` handles sensor input
+* `app_pipeline` manages processing flow
+* `app_decision` evaluates system state
+* `app_mqtt` handles telemetry transport
+
+This structure improves maintainability and scalability for future extensions.
+
+---
+
+## Correct Network Lifecycle
 
 MQTT starts only after:
 
-```
+```text
 Wi-Fi connected → IP_EVENT_STA_GOT_IP → MQTT start
 ```
 
-This prevents connection errors such as:
-
-```
-connect() error: Host is unreachable
-```
-
-### Scalable IoT Pattern
-
-* ESP32 = producer (edge node)
-* Python = subscriber
-
-This follows a standard **producer–consumer architecture**.
+This prevents early connection failures and improves network reliability.
 
 ---
 
-## 📘 Documentation
+# 📘 Documentation
 
-For detailed system design and implementation, see:
+For detailed system design and implementation notes:
 
 * [Architecture & Design](docs/architecture.md)
 
 ---
 
-## 🎯 What This Project Demonstrates
+# 🎯 What This Project Demonstrates
 
-* Embedded system architecture (ESP-IDF)
-* Real-time data pipeline design
-* Edge AI inference on MCU
-* MQTT-based IoT communication
-* Event-driven firmware design
-
----
-
-## 🚀 Future Improvements
-
-* MQTT QoS / retry mechanism
-* Offline buffering (store & forward)
-* Cloud integration (AWS IoT / Azure)
-* Visualization dashboard
+* ESP-IDF firmware architecture
+* Event-driven embedded design
+* FreeRTOS queue/task communication
+* Embedded networking (Wi-Fi / HTTP / MQTT)
+* Modular firmware organization
+* Integration testing using Python tools
+* Production-style IoT communication flow
 
 ---
 
-## 👨‍💻 Author
+# 🚀 Future Improvements
+
+* MQTT QoS / retry handling
+* Offline buffering and recovery
+* Additional event sources (UART / BLE / sensors)
+* Extended system monitoring and diagnostics
+* OTA update support
+
+---
+
+# 👨‍💻 Author
 
 Wayne Chung
 Embedded Linux / Firmware Engineer
